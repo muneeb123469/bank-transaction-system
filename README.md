@@ -46,6 +46,7 @@ sufficient balance
 Transaction lifecycle:
 PENDING
 COMPLETED
+MongoDB session-based atomicity with rollback safety
 
 🏦 System User (Bank Simulation)
 Special user with systemUser: true

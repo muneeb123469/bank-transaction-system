@@ -1,10 +1,13 @@
+const mongoose = require("mongoose");
 const Transaction = require("../models/transaction.model");
 const Account = require("../models/account.model");
-const calculateBalance = require("../utils/calculateBalance");
 const Ledger = require("../models/ledger.model");
+const calculateBalance = require("../utils/calculateBalance");
 const sendEmail = require("../services/email.service");
 
 exports.createTransaction = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { fromAccount, toAccount, amount, idempotencyKey } = req.body || {};
 
@@ -83,56 +86,84 @@ exports.createTransaction = async (req, res) => {
       });
     }
 
-    const transaction = await Transaction.create({
-      fromAccount,
-      toAccount,
-      amount,
-      currency: "PKR",
-      status: "PENDING",
-      idempotencyKey,
-      description: "Fund transfer initiated",
-    });
+    session.startTransaction();
 
-    // DEBIT sender
-    await Ledger.create({
-      account: senderAccount._id,
-      transaction: transaction._id,
-      entryType: "DEBIT",
-      amount,
-      narration: "Transfer debit",
-    });
+    const transactionDocs = await Transaction.create(
+      [
+        {
+          fromAccount,
+          toAccount,
+          amount,
+          currency: "PKR",
+          status: "PENDING",
+          idempotencyKey,
+          description: "Fund transfer initiated",
+        },
+      ],
+      { session },
+    );
 
-    // CREDIT receiver
-    await Ledger.create({
-      account: receiverAccount._id,
-      transaction: transaction._id,
-      entryType: "CREDIT",
-      amount,
-      narration: "Transfer credit",
-    });
+    const newTransaction = transactionDocs[0];
 
-    // Mark completed
-    transaction.status = "COMPLETED";
-    await transaction.save();
+    await Ledger.create(
+      [
+        {
+          account: senderAccount._id,
+          transaction: newTransaction._id,
+          entryType: "DEBIT",
+          amount,
+          narration: "Transfer debit",
+        },
+      ],
+      { session },
+    );
+
+    await Ledger.create(
+      [
+        {
+          account: receiverAccount._id,
+          transaction: newTransaction._id,
+          entryType: "CREDIT",
+          amount,
+          narration: "Transfer credit",
+        },
+      ],
+      { session },
+    );
+
+    newTransaction.status = "COMPLETED";
+    await newTransaction.save({ session });
+
+    await session.commitTransaction();
+
     await sendEmail({
       to: req.user.email,
       subject: "Transaction Successful",
       text: `Your transfer of PKR ${amount} was completed successfully.`,
       html: `<h2>Transaction Successful</h2><p>Your transfer of <strong>PKR ${amount}</strong> was completed successfully.</p>`,
     });
+
     res.status(201).json({
       message: "Transaction completed successfully",
-      transaction,
+      transaction: newTransaction,
     });
   } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
     console.error("Create transaction error:", error);
     res.status(500).json({
       message: "Server error",
     });
+  } finally {
+    session.endSession();
   }
 };
 
 exports.createInitialFundsTransaction = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { toAccount, amount, idempotencyKey } = req.body || {};
 
@@ -154,7 +185,15 @@ exports.createInitialFundsTransaction = async (req, res) => {
       });
     }
 
-    // 🔹 Find system account
+    const existingTransaction = await Transaction.findOne({ idempotencyKey });
+
+    if (existingTransaction) {
+      return res.status(400).json({
+        message:
+          "Duplicate initial funding request: idempotency key already used",
+      });
+    }
+
     const systemAccount = await Account.findOne({
       user: req.user._id,
     });
@@ -165,7 +204,6 @@ exports.createInitialFundsTransaction = async (req, res) => {
       });
     }
 
-    // 🔹 Find receiver account
     const receiverAccount = await Account.findById(toAccount);
 
     if (!receiverAccount) {
@@ -173,56 +211,77 @@ exports.createInitialFundsTransaction = async (req, res) => {
         message: "Receiver account not found",
       });
     }
-    const existingTransaction = await Transaction.findOne({ idempotencyKey });
 
-    if (existingTransaction) {
+    if (receiverAccount.status !== "active") {
       return res.status(400).json({
-        message:
-          "Duplicate initial funding request: idempotency key already used",
+        message: "Receiver account is not active",
       });
     }
 
-    // 🔹 Create transaction
-    const transaction = await Transaction.create({
-      fromAccount: systemAccount._id,
-      toAccount,
-      amount,
-      currency: "PKR",
-      status: "PENDING",
-      idempotencyKey,
-      description: "Initial funding",
-    });
+    session.startTransaction();
 
-    // 🔹 Create DEBIT entry (system loses money)
-    await Ledger.create({
-      account: systemAccount._id,
-      transaction: transaction._id,
-      entryType: "DEBIT",
-      amount,
-      narration: "Initial funding debit",
-    });
+    const transactionDocs = await Transaction.create(
+      [
+        {
+          fromAccount: systemAccount._id,
+          toAccount,
+          amount,
+          currency: "PKR",
+          status: "PENDING",
+          idempotencyKey,
+          description: "Initial funding",
+        },
+      ],
+      { session },
+    );
 
-    // 🔹 Create CREDIT entry (user gains money)
-    await Ledger.create({
-      account: receiverAccount._id,
-      transaction: transaction._id,
-      entryType: "CREDIT",
-      amount,
-      narration: "Initial funding credit",
-    });
+    const newTransaction = transactionDocs[0];
 
-    // 🔹 Mark transaction as completed
-    transaction.status = "COMPLETED";
-    await transaction.save();
+    await Ledger.create(
+      [
+        {
+          account: systemAccount._id,
+          transaction: newTransaction._id,
+          entryType: "DEBIT",
+          amount,
+          narration: "Initial funding debit",
+        },
+      ],
+      { session },
+    );
+
+    await Ledger.create(
+      [
+        {
+          account: receiverAccount._id,
+          transaction: newTransaction._id,
+          entryType: "CREDIT",
+          amount,
+          narration: "Initial funding credit",
+        },
+      ],
+      { session },
+    );
+
+    newTransaction.status = "COMPLETED";
+    await newTransaction.save({ session });
+
+    await session.commitTransaction();
 
     res.status(201).json({
       message: "Initial funding successful",
-      transaction,
+      transaction: newTransaction,
     });
   } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
     console.error("Initial funding error:", error);
     res.status(500).json({
       message: "Server error",
     });
+  } finally {
+    session.endSession();
   }
 };
