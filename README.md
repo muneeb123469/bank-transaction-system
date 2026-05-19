@@ -211,40 +211,40 @@ Scalable system design
 
 ### 📝 Register API
 
-![Register](docs/screenshots/register-api)
+![Register](docs/screenshots/register-api.png)
 
 ---
 
 ### 🔐 Login API
 
-![Login](docs/screenshots/login-api)
+![Login](docs/screenshots/login-api.png)
 
 ---
 
 ### 🏦 Create Account
 
-![Create Account](docs/screenshots/create-account)
+![Create Account](docs/screenshots/create-account.png)
 
 ---
 
 ### 💰 Initial Funding (System User)
 
-![Initial Funding](docs/screenshots/initial-funding)
+![Initial Funding](docs/screenshots/initial-funding.png)
 
 ---
 
 ### 💸 Transaction Success
 
-![Transaction Success](docs/screenshots/transaction-success)
+![Transaction Success](docs/screenshots/transaction-success.png)
 
 ---
 
 ### ❌ Transaction Failure
 
-![Transaction Failure](docs/screenshots/transaction-failure)
+![Transaction Failure](docs/screenshots/transaction-failure.png)
 
 ---
 
 ### 🏦 System User Login (Bank Simulation)
 
-![System User Login](docs/screenshots/system-user-login)
+![System User Login](docs/screenshots/system-user-login.png)
