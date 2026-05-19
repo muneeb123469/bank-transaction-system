@@ -3,6 +3,7 @@
 A fully functional backend banking system built using **Node.js, Express, and MongoDB** that simulates real-world financial transactions using a **ledger-based accounting system**.
 
 ---
+
 ## 🌐 Live Deployment
 
 Backend API is deployed on Render:
@@ -11,7 +12,7 @@ Backend API is deployed on Render:
 
 ### Health Check
 
-```bash
+````bash
 GET https://bank-ledger-transaction-api.onrender.com
 
 Response:
@@ -140,7 +141,7 @@ server.js # Entry point
 git clone https://github.com/muneeb123469/bank-transaction-system.git
 cd bank-transaction-system
 npm install
-```
+````
 
 ⚙️ Environment Variables
 
@@ -210,40 +211,40 @@ Scalable system design
 
 ### 📝 Register API
 
-![Register](docs/screenshots/register-api.png)
+![Register](docs/screenshots/register-api)
 
 ---
 
 ### 🔐 Login API
 
-![Login](docs/screenshots/login-api.png)
+![Login](docs/screenshots/login-api)
 
 ---
 
 ### 🏦 Create Account
 
-![Create Account](docs/screenshots/create-account.png)
+![Create Account](docs/screenshots/create-account)
 
 ---
 
 ### 💰 Initial Funding (System User)
 
-![Initial Funding](docs/screenshots/initial-funding.png)
+![Initial Funding](docs/screenshots/initial-funding)
 
 ---
 
 ### 💸 Transaction Success
 
-![Transaction Success](docs/screenshots/transaction-success.png)
+![Transaction Success](docs/screenshots/transaction-success)
 
 ---
 
 ### ❌ Transaction Failure
 
-![Transaction Failure](docs/screenshots/transaction-failure.png)
+![Transaction Failure](docs/screenshots/transaction-failure)
 
 ---
 
 ### 🏦 System User Login (Bank Simulation)
 
-![System User Login](docs/screenshots/system-user-login.png)
+![System User Login](docs/screenshots/system-user-login)
