@@ -3,6 +3,25 @@
 A fully functional backend banking system built using **Node.js, Express, and MongoDB** that simulates real-world financial transactions using a **ledger-based accounting system**.
 
 ---
+## 🌐 Live Deployment
+
+Backend API is deployed on Render:
+
+🔗 https://bank-ledger-transaction-api.onrender.com
+
+### Health Check
+
+```bash
+GET https://bank-ledger-transaction-api.onrender.com
+
+Response:
+API is running...
+
+API Base URL:
+https://bank-ledger-transaction-api.onrender.com/api
+
+Note: /api alone does not return data because no GET /api route is defined. Use the actual API routes such as /api/auth, /api/accounts, and /api/transactions.
+
 
 ## 🚀 Features
 
